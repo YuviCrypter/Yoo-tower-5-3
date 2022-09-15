@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Unity WebGL Player | Shoperse</title>
+    <link rel="shortcut icon" href="TemplateData/favicon.ico">
+    <link rel="stylesheet" href="TemplateData/style.css">
+  </head>
+  <body>
+    <div id="lo" class="loadingoverlay" style="height:100vh; width:100vw; background-color: black; background-image: url(load.png); background-position: center; background-repeat: no-repeat; background-size:contain; z-index:3; position:absolute; display: flex; align-items: center; justify-content: center; color: rgb(58, 58, 58); ">
+      <div class="loadpos" style="transform: TranslateY(-20vh) ;">
+        <div class="cube" style="height:100px; width:100px; display: flex; justify-content: center; align-items: center;"> 
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex">
+      <div id="full">
+        <div id="unity-container" class="unity-desktop">
+          <canvas id="unity-canvas" width=960 height=600></canvas>
+          <div id="unity-loading-bar">
+            <div id="unity-logo"></div>
+            <div id="unity-progress-bar-empty">
+              <div id="unity-progress-bar-full"></div>
+            </div>
+          </div>
+          <div id="unity-warning"> </div>
+          <!-- <div id="unity-footer">
+            <div id="unity-webgl-logo"></div>
+            <div id="unity-fullscreen-button"></div>
+            <div id="unity-build-title">Shoperse</div>
+          </div> -->
+        </div>
+      </div>
+      <div id="fullscreen-btn" class="fullscreen-btn" onclick="FullScreen()"></div>
+    </div>
+    <div id="popup" class="popup">
+      <iframe id="frame" src="" style="position:fixed; height: 80vh; width:80vw; z-index:1; "></iframe>
+      <!-- <button id="popupclose" onclick="ClosePopup()" style="z-index: 1; height:40px;width:40px; transform: translate(38vw,-34vh);  display: inline-block; content: '\00d7';  background-image: url(close.png); background-size: cover; background-color: rgba(255, 255, 255, 0); border:none;"></button> -->
+      <div onclick="ClosePopup()" class="close-btn" style="z-index: 2; position: fixed; height:40px;width:40px; "></div>
+      <button onclick="ClosePopup()" style="position:fixed; height: 100vh; width:100vw; background-color:rgba(255, 255, 255, 0); "></button>
+    </div>
+    <script>
+      var container = document.querySelector("#unity-container");
+      var canvas = document.querySelector("#unity-canvas");
+      var loadingBar = document.querySelector("#unity-loading-bar");
+      var progressBarFull = document.querySelector("#unity-progress-bar-full");
+      var fullscreenButton = document.querySelector("#unity-fullscreen-button");
+      var warningBanner = document.querySelector("#unity-warning");
+
+      // Shows a temporary message banner/ribbon for a few seconds, or
+      // a permanent error message on top of the canvas if type=='error'.
+      // If type=='warning', a yellow highlight color is used.
+      // Modify or remove this function to customize the visually presented
+      // way that non-critical warnings and error messages are presented to the
+      // user.
+      function unityShowBanner(msg, type) {
+        function updateBannerVisibility() {
+          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+        }
+        var div = document.createElement('div');
+        div.innerHTML = msg;
+        warningBanner.appendChild(div);
+        if (type == 'error') div.style = 'background: red; padding: 10px;';
+        else {
+          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
+          setTimeout(function() {
+            warningBanner.removeChild(div);
+            updateBannerVisibility();
+          }, 5000);
+        }
+        updateBannerVisibility();
+      }
+
+      var buildUrl = "Build";
+      var loaderUrl = buildUrl + "/Builds.loader.js";
+      var config = {
+        dataUrl: buildUrl + "/Builds.data.unityweb",
+        frameworkUrl: buildUrl + "/Builds.framework.js.unityweb",
+        codeUrl: buildUrl + "/Builds.wasm.unityweb",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "Shoperse Think Strategy",
+        productName: "Shoperse",
+        productVersion: "0.1",
+        showBanner: unityShowBanner,
+      };
+
+      // By default Unity keeps WebGL canvas render target size matched with
+      // the DOM size of the canvas element (scaled by window.devicePixelRatio)
+      // Set this to false if you want to decouple this synchronization from
+      // happening inside the engine, and you would instead like to size up
+      // the canvas DOM size and WebGL render target sizes yourself.
+      // config.matchWebGLToCanvasSize = false;
+
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        container.className = "unity-mobile";
+        // Avoid draining fillrate performance on mobile devices,
+        // and default/override low DPI mode on mobile browsers.
+        config.devicePixelRatio = 1;
+        unityShowBanner('WebGL builds are not supported on mobile devices.');
+      } else {
+        canvas.style.width = "100vw";
+        canvas.style.height = "98vh";
+      }
+      loadingBar.style.display = "block";
+      var gameInstance;
+      var script = document.createElement("script");
+      script.src = loaderUrl;
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+          progressBarFull.style.width = 100 * progress + "%";
+        }).then((unityInstance) => {
+          gameInstance = unityInstance;
+        //   const message = "some text";
+        //   unityInstance.SendMessage(
+        //     "[Bridge]",
+        //     "ReceiveMessageFromPage",
+        //     message
+        //  );
+         
+          loadingBar.style.display = "none";
+          // fullscreenButton.onclick = () => {
+          //   unityInstance.SetFullscreen(1)
+          // };
+        }).catch((message) => {
+          alert(message);
+        });
+      };
+      document.body.appendChild(script);
+    </script>
+   
+    <script>
+      
+      var elem = document.getElementById("full");
+      
+      function FullScreen(){
+        if (elem.requestFullscreen) {
+          elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) { /* Safari */
+          elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) { /* IE11 */
+          elem.msRequestFullscreen();
+        }
+      }
+
+      function CloseOverlay(){
+        document.getElementById("lo").style.height = 0;
+        document.getElementById("lo").style.width = 0;
+        console.log("Closing");
+      }
+      function ClosePopup(){
+        var popup = document.getElementById("popup");
+        popup.style.visibility="hidden";
+      }
+
+      function receivePopupFromUnity(url){
+        console.log(url);
+        if(url == "ClosePopup"){
+          ClosePopup();
+          return;
+        }
+          var popup = document.getElementById("popup");
+          popup.style.visibility= 'visible';
+          console.log("popup");
+          var frame = document.getElementById("frame");
+          frame.src = url;
+        
+        
+      }
+
+      function openNewWindow(url){
+        console.log(url);
+        window.open(url, '_blank');
+        
+      }
+   </script>
+    
+  </body>
+</html>
+
+
